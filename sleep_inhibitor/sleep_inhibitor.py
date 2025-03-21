@@ -1,6 +1,6 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python3
+
 'Program to run plugins to inhibit system sleep/suspend.'
-# Requires python 3.6+
 # Mark Blakeney, Jul 2020.
 
 import argparse
@@ -25,6 +25,9 @@ SYSTEMD_SLEEP_PROGS = (
 )
 
 TIMEMULTS = {'s': 1, 'm': 60, 'h': 3600}
+
+def log(msg):
+    print(msg, flush=True)
 
 def conv_to_secs(val):
     'Convert given time string to float seconds'
@@ -147,7 +150,7 @@ class Plugin:
         self.icmd = shlex.split(f'{inhibitor_prog}{what} --who="{progname}" '
                 f'--why="{self.name}" {prog} -s {period_on} -i "{cmd}"')
 
-        print(f'{self.name} [{path}] configured @ {period_str}/{period_on_str}')
+        log(f'{self.name} [{path}] configured @ {period_str}/{period_on_str}')
 
     async def run(self):
         'Worker function which runs as a asyncio task for each plugin'
@@ -158,8 +161,8 @@ class Plugin:
             while return_code == SUSP_CODE:
                 if self.is_inhibiting is not True:
                     self.is_inhibiting = True
-                    print(f'{self.name} is inhibiting '
-                          f'suspend (return={return_code})')
+                    log(f'{self.name} is inhibiting '
+                        f'suspend (return={return_code})')
 
                 proc = await asyncio.create_subprocess_exec(*self.icmd)
                 return_code = await proc.wait()
@@ -170,8 +173,8 @@ class Plugin:
                 if self.execute_xdotool:
                     run_command("xdotool click 10")
 
-                print(f'{self.name} is not inhibiting '
-                      f'suspend (return={return_code})')
+                log(f'{self.name} is not inhibiting '
+                    f'suspend (return={return_code})')
 
             await asyncio.sleep(self.period)
 
@@ -183,9 +186,18 @@ def init():
             help='alternative configuration file')
     opt.add_argument('-p', '--plugin-dir',
             help='alternative plugin dir')
+    opt.add_argument('-P', '--package-dir', action='store_true',
+            help='just show directory where sample conf/service files, '
+                     'and default plugins can be found')
     opt.add_argument('-s', '--sleep', type=float, help=argparse.SUPPRESS)
     opt.add_argument('-i', '--inhibit', help=argparse.SUPPRESS)
     args = opt.parse_args()
+
+    base_dir = Path(__file__).resolve().parent
+
+    if args.package_dir:
+        log(base_dir)
+        sys.exit()
 
     # This instance may be a child invocation merely to run and check
     # the plugin while it is inhibiting.
@@ -216,20 +228,12 @@ def init():
             continue
 
         vers = res.stdout.split('\n')[0].strip()
-        print(f'{progname} using {iprog}, {vers}')
+        log(f'{progname} using {iprog}, {vers}')
         inhibitor_prog = iprog
 
     if not inhibitor_prog:
         opts = ' or '.join(SYSTEMD_SLEEP_PROGS)
         sys.exit(f'No systemd-inhibitor app installed from one of {opts}.')
-
-    # Work out plugin and base dirs for this installation
-    plugin_dir = Path(sys.prefix) / 'share' / progname / 'plugins'
-    if plugin_dir.exists():
-        base_dir = plugin_dir.parent
-    else:
-        plugin_dir = None
-        base_dir = None
 
     # Determine config file path
     cname = progname + '.conf'
@@ -237,13 +241,12 @@ def init():
             Path(f'/etc/{cname}')
 
     if not cfile.exists():
-        print(f'Configuration file {cfile} does not exist.', file=sys.stderr)
-        if base_dir and not args.config:
-            print(f'Copy {base_dir}/{cname} to /etc and edit appropriately.',
-                    file=sys.stderr)
-        sys.exit()
+        err = f'Configuration file {cfile} does not exist.'
+        if not args.config:
+            err += f' Copy {base_dir}/{cname} to /etc and edit appropriately.'
+        sys.exit(err)
 
-    from ruamel.yaml import YAML
+    from ruamel.yaml import YAML  # type: ignore
     conf = YAML(typ='safe').load(cfile)
 
     plugins = conf.get('plugins')
@@ -251,6 +254,8 @@ def init():
         sys.exit('No plugins configured')
 
     # Work out plugin dir
+    plugin_dir = base_dir / 'plugins'
+    plugin_dir = str(plugin_dir) if plugin_dir.is_dir() else None
     plugin_dir = args.plugin_dir or conf.get('plugin_dir', plugin_dir)
 
     # Get some global defaults

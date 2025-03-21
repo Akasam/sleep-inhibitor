@@ -168,7 +168,7 @@ class Plugin:
                 self.is_inhibiting = False
                 
                 if self.execute_xdotool:
-                    run_command("xdotool mousemove 100 100")
+                    run_command("xdotool click 10")
 
                 print(f'{self.name} is not inhibiting '
                       f'suspend (return={return_code})')

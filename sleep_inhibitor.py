@@ -7,6 +7,8 @@ import argparse
 import asyncio
 import shlex
 import os
+import re
+import pwd
 import subprocess
 import sys
 import time
@@ -41,11 +43,45 @@ def conv_to_secs(val):
 
     return valf * mult
 
-def run_command(command, display=":0"):
+def get_active_user_and_display():
+    try:
+        # Find active users
+        users_output = subprocess.check_output(['who'], universal_newlines=True)
+        users = set(re.findall(r'^(\S+)', users_output, re.MULTILINE))
+
+        if len(users) == 1:
+            user = users.pop()
+            # Get user's home directory
+            user_home = pwd.getpwnam(user).pw_dir
+            # Find DISPLAY for the user
+            env_output = subprocess.check_output(['sudo', '-u', user, 'env'], universal_newlines=True)
+            display_match = re.search(r'^DISPLAY=(:\d+)', env_output, re.MULTILINE)
+
+            if display_match:
+                display = display_match.group(1)
+            else:
+                display = None
+
+            return user, user_home, display
+        else:
+            return None, None, None
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return None, None, None
+
+def run_command(command):
     try:
         # Set the DISPLAY and XAUTHORITY environment variables
         env = os.environ.copy()
+
+        user, user_home, display = get_active_user_and_display()
+
+        if(not display):
+            display = ":0"
+        
         env["DISPLAY"] = display
+        env["XAUTHORITY"] = f"{user_home}/.Xauthority"
         
         # Split the command string into a list of arguments
         args = command.split()

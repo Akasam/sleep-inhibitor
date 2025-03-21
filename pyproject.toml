@@ -32,6 +32,9 @@ text = "GPLv3"
 [tool.setuptools.package-data]
 "*" = ["*.conf", "*.service", "plugins/*"]
 
+[tool.setuptools.packages.find]
+include = ["sleep_inhibitor", "sleep_inhibitor.*"]
+
 [tool.setuptools_scm]
 version_scheme = "post-release"
 

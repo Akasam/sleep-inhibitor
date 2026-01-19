@@ -77,7 +77,7 @@ the next Configuration section.
 Python 3.7 or later is required. The 3rd party ruamel.yaml package is
 also required. Note [_sleep-inhibitor_ is on
 PyPI](https://pypi.org/project/sleep-inhibitor/) so just ensure that
-[`pipx`](https://pypa.github.io/pipx/) is installed then:
+[`pipx`](https://pipx.pypa.io/stable/) is installed then:
 
 To install:
 
@@ -113,7 +113,7 @@ file](sleep_inhibitor/sleep-inhibitor.conf).
 ## Automatic Startup as systemd Service
 
 If you installed from source or via `pip` then copy the included
-[`sleep-inhibitor.service`](sleep-/sleep-inhibitor.service)
+[`sleep-inhibitor.service`](sleep_inhibitor/sleep-inhibitor.service)
 to `/etc/systemd/system/` (note that [Arch](https://www.archlinux.org/)
 users who installed from
 [AUR](https://aur.archlinux.org/packages/sleep-inhibitor) can skip this
@@ -190,6 +190,6 @@ either version 3 of the License, or any later version. This program is
 distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or
 FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License at
-<https://www.gnu.org/licenses/> for more details.
+<https://en.wikipedia.org/wiki/GNU_General_Public_License> for more details.
 
 <!-- vim: se ai syn=markdown: -->

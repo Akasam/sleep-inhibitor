@@ -6,13 +6,14 @@ check:
 	mypy */*.py
 	pyright */*.py
 	vermin -vv --exclude importlib.resources.files --no-tips -i */*.py */*/*.py
+	md-link-checker
 
 build:
 	rm -rf dist
-	python3 -m build
+	uv build
 
 upload: build
-	twine3 upload dist/*
+	uv-publish
 
 doc:
 	update-readme-usage
